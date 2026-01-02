@@ -1,5 +1,5 @@
 [build]
-  command = "npm install --prefix server && npm install --prefix client && npm run build --prefix client"
+  command = "CI=false npm run build"
   publish = "client/dist"
 
 [functions]
