@@ -17,13 +17,15 @@ const SESSIONS = new Map(); // Kept for legacy if needed, but we are moving to s
 app.use(cors());
 app.use(express.json());
 
+// ... (imports remain the same)
+
 // Memory storage for uploads (files will be sent to Supabase Storage)
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-me';
 
-// Helper: Upload file to Supabase Storage
+// ... (uploadToSupabase function remains same) ...
 async function uploadToSupabase(file, bucket = 'product-images') {
     const fileExt = file.originalname.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -43,10 +45,15 @@ async function uploadToSupabase(file, bucket = 'product-images') {
     return publicUrl;
 }
 
-// --- API Routes ---
+// --- API Routes on Router ---
+
+// Test Route
+router.get('/hello', (req, res) => {
+    res.json({ message: "Hello from Netlify!", path: req.path });
+});
 
 // Products CRUD
-app.get('/api/products', async (req, res) => {
+router.get('/products', async (req, res) => {
     try {
         const { data: products, error } = await supabase
             .from('products')
@@ -60,7 +67,7 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
-app.post('/api/products', upload.single('image'), async (req, res) => {
+router.post('/products', upload.single('image'), async (req, res) => {
     try {
         const { name, description, treatment, tags } = req.body;
         let image_url = null;
@@ -82,7 +89,7 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
     }
 });
 
-app.get('/api/products/template', (req, res) => {
+router.get('/products/template', (req, res) => {
     try {
         const wb = XLSX.utils.book_new();
         const headers = [
@@ -101,7 +108,7 @@ app.get('/api/products/template', (req, res) => {
     }
 });
 
-app.post('/api/products/import', upload.single('file'), async (req, res) => {
+router.post('/products/import', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
@@ -136,7 +143,7 @@ app.post('/api/products/import', upload.single('file'), async (req, res) => {
     }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+router.delete('/products/:id', async (req, res) => {
     try {
         const { error } = await supabase
             .from('products')
@@ -151,7 +158,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // Settings CRUD
-app.get('/api/settings', async (req, res) => {
+router.get('/settings', async (req, res) => {
     try {
         const { data: settings, error } = await supabase
             .from('settings')
@@ -169,7 +176,7 @@ app.get('/api/settings', async (req, res) => {
     }
 });
 
-app.post('/api/settings', async (req, res) => {
+router.post('/settings', async (req, res) => {
     try {
         const { provider, api_key, base_url, model_name, custom_prompt, company_address, company_contact, company_hours } = req.body;
 
@@ -202,7 +209,7 @@ app.post('/api/settings', async (req, res) => {
 });
 
 // AI Analysis Endpoint
-app.post('/api/analyze', upload.single('image'), async (req, res) => {
+router.post('/analyze', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No image uploaded' });
@@ -402,7 +409,7 @@ const requireAdmin = (req, res, next) => {
     });
 };
 
-app.post('/api/login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
         const { data: user, error } = await supabase.from('users').select('*').eq('username', username).single();
@@ -417,17 +424,17 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.post('/api/logout', (req, res) => {
+router.post('/logout', (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/users', requireAdmin, async (req, res) => {
+router.get('/users', requireAdmin, async (req, res) => {
     const { data: users, error } = await supabase.from('users').select('id, username, role, expires_at, created_at');
     if (error) return res.status(500).json({ error: error.message });
     res.json(users);
 });
 
-app.post('/api/users', requireAdmin, async (req, res) => {
+router.post('/users', requireAdmin, async (req, res) => {
     try {
         const { username, password, days_active } = req.body;
         const hash = bcrypt.hashSync(password, 10);
@@ -445,7 +452,7 @@ app.post('/api/users', requireAdmin, async (req, res) => {
     }
 });
 
-app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+router.delete('/users/:id', requireAdmin, async (req, res) => {
     try {
         const { error } = await supabase.from('users').delete().eq('id', req.params.id);
         if (error) throw error;
@@ -455,7 +462,7 @@ app.delete('/api/users/:id', requireAdmin, async (req, res) => {
     }
 });
 
-app.patch('/api/users/:id', requireAdmin, async (req, res) => {
+router.patch('/users/:id', requireAdmin, async (req, res) => {
     try {
         const { password, days_active } = req.body;
         const updates = {};
@@ -478,7 +485,7 @@ app.patch('/api/users/:id', requireAdmin, async (req, res) => {
 });
 
 // Chat Agent Endpoint
-app.post('/api/chat', async (req, res) => {
+router.post('/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
@@ -537,10 +544,17 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// IMPORTANT: Mount the router correctly for both local and Netlify
+// Netlify strips '/.netlify/functions/function_name' but passes the rest.
+// For safety, we mount the router at BOTH / and /api to catch both cases.
+app.use('/api', router); // For local dev where it matches /api/login
+app.use('/', router);    // For Netlify where it might be rewriting to root of function
+
 // Netlify Functions Export
-if (process.env.NETLIFY) {
-    module.exports.handler = serverless(app);
-} else {
+module.exports.handler = serverless(app);
+
+// Local Dev Start
+if (!process.env.NETLIFY) {
     const PORT = process.env.PORT || 3002;
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
