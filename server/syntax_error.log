@@ -1,0 +1,18 @@
+SYNTAX ERROR DETECTED:
+Unexpected identifier 'json'
+Line: ?
+Stack: server.js:219
+      JANGAN GUNAKAN ```json atau ```. HANYA RAW JSON.
+                        ^^^^
+
+SyntaxError: Unexpected identifier 'json'
+    at new Script (node:vm:117:7)
+    at Object.<anonymous> (D:\GAMA AGRO SEJATI\PROJECT DIVISION\TOOLS\PROJECT\Apps identifikasi penyakit tanaman\server\debug_syntax.js:6:5)
+    at Module._compile (node:internal/modules/cjs/loader:1761:14)
+    at Object..js (node:internal/modules/cjs/loader:1893:10)
+    at Module.load (node:internal/modules/cjs/loader:1481:32)
+    at Module._load (node:internal/modules/cjs/loader:1300:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47

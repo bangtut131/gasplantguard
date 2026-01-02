@@ -1,0 +1,22 @@
+[build]
+  command = "npm i --prefix client && npm run build --prefix client"
+  publish = "client/dist"
+
+[functions]
+  directory = "server"
+  # Entry point is implicit if using standard serverless-http pattern, but we can specify if needed.
+  # Netlify detects functions in 'server' directory. We might need a specific entry file.
+  # Usually it's 'netlify/functions'.
+  # Update: We should move the server code to 'netlify/functions' OR configure redirects.
+
+# Redirects for Single Page App
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Proxy /api requests to the serverless function
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/server/:splat"
+  status = 200
