@@ -16,6 +16,7 @@ const SESSIONS = new Map(); // Kept for legacy if needed, but we are moving to s
 // Middleware
 app.use(cors());
 app.use(express.json());
+const router = express.Router();
 
 // Middleware to check database connection health
 app.use((req, res, next) => {
