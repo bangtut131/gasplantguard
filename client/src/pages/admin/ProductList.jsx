@@ -4,6 +4,7 @@ import { Plus, Trash2, X, Image as ImageIcon, Upload } from 'lucide-react';
 const ProductList = () => {
     const [products, setProducts] = useState([]);
     const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null); // Track editing state
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -12,6 +13,10 @@ const ProductList = () => {
         image: null
     });
     const [loading, setLoading] = useState(true);
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
 
     const fetchProducts = () => {
         fetch('/api/products')
@@ -41,7 +46,7 @@ const ProductList = () => {
         if (!formData.image) return alert('Silakan pilih file JSON.');
 
         const data = new FormData();
-        data.append('file', formData.image); // Reusing 'image' state for file input temporarily
+        data.append('file', formData.image);
 
         try {
             setLoading(true);
@@ -52,8 +57,7 @@ const ProductList = () => {
             const result = await res.json();
             if (res.ok) {
                 alert(`Berhasil mengimpor ${result.count} produk.`);
-                setShowForm(false);
-                setFormData({ name: '', description: '', treatment: '', tags: '', image: null, isImport: false });
+                resetForm();
                 fetchProducts();
             } else {
                 alert(result.error);
@@ -70,6 +74,27 @@ const ProductList = () => {
         window.location.href = '/api/products/template';
     };
 
+    const resetForm = () => {
+        setShowForm(false);
+        setEditingId(null);
+        setFormData({ name: '', description: '', treatment: '', tags: '', image: null, isImport: false });
+    };
+
+    const handleEdit = (product) => {
+        setEditingId(product.id);
+        setFormData({
+            name: product.name,
+            description: product.description || '',
+            treatment: product.treatment || '',
+            tags: product.tags || '',
+            image: null, // Keep null, only update if new file selected
+            isImport: false
+        });
+        setShowForm(true);
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const data = new FormData();
@@ -81,14 +106,16 @@ const ProductList = () => {
             data.append('image', formData.image);
         }
 
+        const url = editingId ? `/api/products/${editingId}` : '/api/products';
+        const method = editingId ? 'PATCH' : 'POST';
+
         try {
-            const res = await fetch('/api/products', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 body: data
             });
             if (res.ok) {
-                setShowForm(false);
-                setFormData({ name: '', description: '', treatment: '', tags: '', image: null, isImport: false });
+                resetForm();
                 fetchProducts();
             }
         } catch (err) {
@@ -106,6 +133,12 @@ const ProductList = () => {
         }
     };
 
+    // Pagination Logic
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentProducts = products.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(products.length / itemsPerPage);
+
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -114,7 +147,13 @@ const ProductList = () => {
                     <button className="btn btn-secondary" onClick={() => { setShowForm(true); setFormData(prev => ({ ...prev, isImport: true })); }}>
                         <Upload size={20} style={{ marginRight: '0.5rem' }} /> Import Excel
                     </button>
-                    <button className="btn btn-primary" onClick={() => { setFormData(prev => ({ ...prev, isImport: false })); setShowForm(!showForm || formData.isImport); }}>
+                    <button className="btn btn-primary" onClick={() => {
+                        if (showForm && !formData.isImport) resetForm();
+                        else {
+                            resetForm();
+                            setShowForm(true);
+                        }
+                    }}>
                         {showForm && !formData.isImport ? <X size={20} /> : <Plus size={20} />}
                         {showForm && !formData.isImport ? 'Batal' : 'Tambah Produk'}
                     </button>
@@ -138,12 +177,12 @@ const ProductList = () => {
                                     <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} required />
                                 </div>
                                 <button type="submit" className="btn btn-primary">Mulai Import</button>
-                                <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary" style={{ marginLeft: '1rem' }}>Batal</button>
+                                <button type="button" onClick={resetForm} className="btn btn-secondary" style={{ marginLeft: '1rem' }}>Batal</button>
                             </form>
                         </>
                     ) : (
                         <>
-                            <h3 className="mb-4">Produk Baru</h3>
+                            <h3 className="mb-4">{editingId ? 'Edit Produk' : 'Produk Baru'}</h3>
                             <form onSubmit={handleSubmit}>
                                 <div className="mb-4">
                                     <label className="block mb-2 font-bold">Nama Produk</label>
@@ -174,11 +213,11 @@ const ProductList = () => {
                                 </div>
 
                                 <div className="mb-4">
-                                    <label className="block mb-2 font-bold">Gambar Produk</label>
+                                    <label className="block mb-2 font-bold">Gambar Produk {editingId && '(Biarkan kosong jika tidak berubah)'}</label>
                                     <input type="file" onChange={handleFileChange} />
                                 </div>
 
-                                <button type="submit" className="btn btn-primary">Simpan Produk</button>
+                                <button type="submit" className="btn btn-primary">{editingId ? 'Simpan Perubahan' : 'Simpan Produk'}</button>
                             </form>
                         </>
                     )}
@@ -187,50 +226,80 @@ const ProductList = () => {
 
             <div className="glass-panel" style={{ padding: '1rem' }}>
                 {loading ? <p>Memuat...</p> : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)', textAlign: 'left' }}>
-                                <th style={{ padding: '1rem' }}>Gambar</th>
-                                <th style={{ padding: '1rem' }}>Nama</th>
-                                <th style={{ padding: '1rem' }}>Tags</th>
-                                <th style={{ padding: '1rem' }}>Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.map(p => (
-                                <tr key={p.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                                    <td style={{ padding: '1rem' }}>
-                                        {p.image_url ? (
-                                            <img src={p.image_url} alt={p.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
-                                        ) : <ImageIcon size={24} className="text-muted" />}
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ fontWeight: 'bold' }}>{p.name}</div>
-                                        <div className="text-muted" style={{ fontSize: '0.85rem' }}>{p.treatment}</div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                            {p.tags && p.tags.split(',').map((tag, i) => (
-                                                <span key={i} style={{ background: 'rgba(0, 166, 126, 0.1)', color: 'var(--primary-dark)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem' }}>
-                                                    {tag.trim()}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <button onClick={() => handleDelete(p.id)} className="btn btn-secondary" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </td>
+                    <>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.1)', textAlign: 'left' }}>
+                                    <th style={{ padding: '1rem' }}>Gambar</th>
+                                    <th style={{ padding: '1rem' }}>Nama</th>
+                                    <th style={{ padding: '1rem' }}>Tags</th>
+                                    <th style={{ padding: '1rem' }}>Aksi</th>
                                 </tr>
-                            ))}
-                            {products.length === 0 && (
-                                <tr>
-                                    <td colSpan={4} className="text-center p-8 text-muted">Belum ada produk.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {currentProducts.map(p => (
+                                    <tr key={p.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                        <td style={{ padding: '1rem' }}>
+                                            {p.image_url ? (
+                                                <img src={p.image_url} alt={p.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '8px' }} />
+                                            ) : <ImageIcon size={24} className="text-muted" />}
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <div style={{ fontWeight: 'bold' }}>{p.name}</div>
+                                            <div className="text-muted" style={{ fontSize: '0.85rem' }}>{p.treatment}</div>
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                {p.tags && p.tags.split(',').map((tag, i) => (
+                                                    <span key={i} style={{ background: 'rgba(0, 166, 126, 0.1)', color: 'var(--primary-dark)', padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem' }}>
+                                                        {tag.trim()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button onClick={() => handleEdit(p)} className="btn btn-secondary" style={{ color: 'var(--primary)', borderColor: 'var(--primary)' }}>
+                                                    Edit
+                                                </button>
+                                                <button onClick={() => handleDelete(p.id)} className="btn btn-secondary" style={{ color: 'var(--accent)', borderColor: 'var(--accent)' }}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {products.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="text-center p-8 text-muted">Belum ada produk.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+
+                        {/* Pagination Controls */}
+                        {products.length > itemsPerPage && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    Previous
+                                </button>
+                                <span style={{ fontWeight: 'bold', color: '#666' }}>
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    className="btn btn-secondary"
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

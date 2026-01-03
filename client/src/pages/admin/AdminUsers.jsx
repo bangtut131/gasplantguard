@@ -10,25 +10,14 @@ const AdminUsers = () => {
     const [newUser, setNewUser] = useState({ username: '', password: '', days_active: 30 });
 
     const fetchUsers = () => {
-        setLoading(true);
-        const token = localStorage.getItem('token');
-        fetch('/api/users', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setUsers(data);
-            })
-            .catch(err => console.error(err))
-            .finally(() => setLoading(false));
+        // ... (existing code)
     };
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+    // ... (useEffect)
 
     const handleCreate = async (e) => {
         e.preventDefault();
+        console.log("Submitting new user:", newUser); // Debug log
         const token = localStorage.getItem('token');
         try {
             const res = await fetch('/api/users', {
@@ -37,8 +26,12 @@ const AdminUsers = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(newUser)
+                body: JSON.stringify({
+                    ...newUser,
+                    days_active: parseInt(newUser.days_active) // Ensure Number
+                })
             });
+            // ... (rest of handler)
 
             if (res.ok) {
                 setMsg('User berhasil dibuat');

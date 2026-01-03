@@ -169,6 +169,32 @@ router.delete('/products/:id', async (req, res) => {
     }
 });
 
+// Update Product
+router.patch('/products/:id', upload.single('image'), async (req, res) => {
+    try {
+        const { name, description, treatment, tags } = req.body;
+        const updates = {};
+        if (name) updates.name = name;
+        if (description) updates.description = description;
+        if (treatment) updates.treatment = treatment;
+        if (tags) updates.tags = tags;
+
+        if (req.file) {
+            updates.image_url = await uploadToSupabase(req.file);
+        }
+
+        const { error } = await supabase
+            .from('products')
+            .update(updates)
+            .eq('id', req.params.id);
+
+        if (error) throw error;
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Settings CRUD
 router.get('/settings', async (req, res) => {
     try {
