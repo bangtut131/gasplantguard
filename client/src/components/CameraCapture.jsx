@@ -4,6 +4,7 @@ import { Camera, X, RefreshCw } from 'lucide-react';
 const CameraCapture = ({ onCapture, onClose }) => {
     const videoRef = useRef(null);
     const [facingMode, setFacingMode] = useState('environment');
+    const [logs, setLogs] = useState("Initializing...");
 
     useEffect(() => {
         startCamera();
@@ -15,19 +16,31 @@ const CameraCapture = ({ onCapture, onClose }) => {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
+            console.log("Requesting camera access...");
+            setLogs(prev => prev + "\nRequesting camera...");
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: facingMode }
             });
+            console.log("Camera access granted");
+            setLogs(prev => prev + "\nAccess granted. Setting stream...");
             setStream(mediaStream);
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
+                setLogs(prev => prev + "\nStream set to video element.");
                 // Explicitly play to ensure it starts, especially on mobile
                 videoRef.current.onloadedmetadata = () => {
-                    videoRef.current.play().catch(e => console.error("Play error:", e));
+                    setLogs(prev => prev + "\nMetadata loaded. Playing...");
+                    videoRef.current.play()
+                        .then(() => setLogs(prev => prev + "\nPlaying successfully."))
+                        .catch(e => {
+                            console.error("Play error:", e);
+                            setLogs(prev => prev + "\nPlay Error: " + e.message);
+                        });
                 };
             }
         } catch (err) {
-            setError('Tidak dapat mengakses kamera. Mohon izinkan akses kamera pada peramban Anda.');
+            setError('Tidak dapat mengakses kamera. ' + err.message);
+            setLogs(prev => prev + "\nError: " + err.message + "\nName: " + err.name);
             console.error(err);
         }
     };
@@ -76,6 +89,26 @@ const CameraCapture = ({ onCapture, onClose }) => {
             ) : (
                 <>
                     <div style={{ position: 'relative' }}>
+                        {/* Debug Logs Overlay */}
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%', // Full coverage
+                            maxHeight: '150px', // But limit height
+                            overflowY: 'auto',
+                            background: 'rgba(0,0,0,0.6)',
+                            color: '#00ff00',
+                            fontSize: '11px',
+                            padding: '8px',
+                            fontFamily: 'monospace',
+                            pointerEvents: 'none',
+                            zIndex: 20
+                        }}>
+                            <div style={{ marginBottom: '5px', borderBottom: '1px solid #333' }}>DEBUG LOG:</div>
+                            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{logs}</pre>
+                        </div>
                         <video
                             ref={videoRef}
                             autoPlay
