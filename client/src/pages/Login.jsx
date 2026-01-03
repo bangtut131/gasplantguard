@@ -8,8 +8,15 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, user } = useAuth();
     const navigate = useNavigate();
+
+    // Redirect if already logged in
+    React.useEffect(() => {
+        if (user) {
+            navigate('/', { replace: true });
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -18,7 +25,7 @@ const Login = () => {
 
         const result = await login(username, password);
         if (result.success) {
-            navigate('/');
+            navigate('/', { replace: true });
         } else {
             setError(result.error);
         }
