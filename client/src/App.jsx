@@ -143,9 +143,9 @@ const Header = () => {
         </Link>
         <nav className="header-nav">
           <span className="text-muted header-greeting" style={{ marginRight: '1rem' }}>Halo, <b>{user.username}</b></span>
-          <Link to="/" className="btn btn-secondary">
+          <a href="/" className="btn btn-secondary">
             <Home size={18} /> <span className="hidden-mobile">Home</span>
-          </Link>
+          </a>
           {user.role === 'admin' && (
             <Link to="/admin/products" className="btn btn-secondary">
               <Package size={18} /> <span className="hidden-mobile">Admin</span>
