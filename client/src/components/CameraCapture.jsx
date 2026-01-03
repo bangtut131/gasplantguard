@@ -21,6 +21,10 @@ const CameraCapture = ({ onCapture, onClose }) => {
             setStream(mediaStream);
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
+                // Explicitly play to ensure it starts, especially on mobile
+                videoRef.current.onloadedmetadata = () => {
+                    videoRef.current.play().catch(e => console.error("Play error:", e));
+                };
             }
         } catch (err) {
             setError('Tidak dapat mengakses kamera. Mohon izinkan akses kamera pada peramban Anda.');
@@ -76,6 +80,7 @@ const CameraCapture = ({ onCapture, onClose }) => {
                             ref={videoRef}
                             autoPlay
                             playsInline
+                            muted={true} // Crucial for autoPlay on many browsers
                             style={{
                                 width: '100%',
                                 borderRadius: '12px',
