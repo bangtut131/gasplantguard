@@ -8,7 +8,9 @@ const supabaseKey = process.env.SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('ERROR: SUPABASE_URL and SUPABASE_KEY must be set in .env');
-  // We don't exit process here to allow build steps to pass, but runtime will fail if not set.
+  // Return null instead of initializing invalid client to prevent crashes
+  module.exports = null;
+  return;
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);

@@ -5,14 +5,14 @@
 [functions]
   directory = "server"
 
-# Redirects for Single Page App
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-# Proxy /api requests to the serverless function
+# Proxy /api requests to the serverless function - MUST BE FIRST
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
+  status = 200
+
+# Redirects for Single Page App - Catch-all MUST BE LAST
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
   status = 200

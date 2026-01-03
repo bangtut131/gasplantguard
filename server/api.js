@@ -17,6 +17,17 @@ const SESSIONS = new Map(); // Kept for legacy if needed, but we are moving to s
 app.use(cors());
 app.use(express.json());
 
+// Middleware to check database connection health
+app.use((req, res, next) => {
+    if (!supabase) {
+        // Return JSON error so frontend doesn't get "Unexpected token <" (HTML)
+        return res.status(500).json({
+            error: 'Server Misconfiguration: SUPABASE_URL or SUPABASE_KEY is missing. Please configure Environment Variables in Netlify.'
+        });
+    }
+    next();
+});
+
 // ... (imports remain the same)
 
 // Memory storage for uploads (files will be sent to Supabase Storage)
