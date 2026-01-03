@@ -5,6 +5,8 @@ const CameraCapture = ({ onCapture, onClose }) => {
     const videoRef = useRef(null);
     const [facingMode, setFacingMode] = useState('environment');
     const [logs, setLogs] = useState("Initializing...");
+    const [error, setError] = useState('');
+    const [stream, setStream] = useState(null);
 
     useEffect(() => {
         startCamera();
