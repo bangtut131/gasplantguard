@@ -61,8 +61,28 @@ function App() {
             </Routes>
           </div>
 
-          {/* Chat Assistant */}
-          <ChatWidget />
+          {/* Chat Assistant - Only visible when logged in */}
+          {/* Note: Header is inside App so we can't easily access useAuth here without refactoring.
+              However, AuthProvider is wrapping Router. We need to access context inside Router.
+              But ChatWidget is rendered inside App component which is inside AuthProvider? 
+              
+              Looking at Lines 31-33:
+              function App() {
+                return (
+                  <AuthProvider>
+                    <Router>
+                      ...
+                      <ChatWidget />
+              
+              `ChatWidget` is inside `AuthProvider`. So `ChatWidget` itself can check `useAuth`.
+              Let's check `ChatWidget.jsx`? 
+              
+              User request: "jangan tampilkan chat agent sebelum user masuk/ login".
+              
+              If I modify `App.jsx`, I need to create a wrapper text or move logic to `ChatWidget`.
+              Using a Wrapper Component for Chat is cleaner.
+          */}
+          <ProtectedChatWidget />
         </div>
       </Router>
     </AuthProvider>
@@ -158,6 +178,12 @@ const Header = () => {
       </div>
     </header>
   );
+};
+
+const ProtectedChatWidget = () => {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <ChatWidget />;
 };
 
 export default App;

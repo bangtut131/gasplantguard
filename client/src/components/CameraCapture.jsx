@@ -91,26 +91,6 @@ const CameraCapture = ({ onCapture, onClose }) => {
             ) : (
                 <>
                     <div style={{ position: 'relative' }}>
-                        {/* Debug Logs Overlay */}
-                        <div style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%', // Full coverage
-                            maxHeight: '150px', // But limit height
-                            overflowY: 'auto',
-                            background: 'rgba(0,0,0,0.6)',
-                            color: '#00ff00',
-                            fontSize: '11px',
-                            padding: '8px',
-                            fontFamily: 'monospace',
-                            pointerEvents: 'none',
-                            zIndex: 20
-                        }}>
-                            <div style={{ marginBottom: '5px', borderBottom: '1px solid #333' }}>DEBUG LOG:</div>
-                            <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{logs}</pre>
-                        </div>
                         <video
                             ref={videoRef}
                             autoPlay
