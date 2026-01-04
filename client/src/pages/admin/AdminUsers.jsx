@@ -9,11 +9,30 @@ const AdminUsers = () => {
     // New User Form State
     const [newUser, setNewUser] = useState({ username: '', password: '', days_active: 30 });
 
-    const fetchUsers = () => {
-        // ... (existing code)
+    const fetchUsers = async () => {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch('/api/users', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            } else {
+                setMsg('Gagal mengambil data user');
+            }
+        } catch (err) {
+            console.error(err);
+            setMsg('Error koneksi ke server');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // ... (useEffect)
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
     const handleCreate = async (e) => {
         e.preventDefault();
